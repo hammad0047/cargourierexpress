@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cargourier Express</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        .bg-cargo {
+            background: url('https://images.pexels.com/photos/1427541/pexels-photo-1427541.jpeg?auto=compress&w=1500&q=80') no-repeat center center fixed;
+            background-size: cover;
+            min-height: 100vh;
+        }
+        .welcome-overlay {
+            background: rgba(0, 32, 64, 0.7);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: stretch;
+        }
+        .banner {
+            color: #fff;
+            font-size: 3rem;
+            font-weight: bold;
+            letter-spacing: 2px;
+            text-align: left;
+            margin-bottom: 2rem;
+        }
+        .footer {
+            color: #fff;
+            text-align: center;
+            position: absolute;
+            bottom: 10px;
+            width: 100%;
+            font-size: 1.1rem;
+            letter-spacing: 1px;
+        }
+        .login-card {
+            background: rgba(255,255,255,0.95);
+            border-radius: 12px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+            padding: 2rem 2.5rem;
+            min-width: 320px;
+        }
+        .dashboard-section {
+            display: none;
+            background: linear-gradient(135deg, #e0e7ff 0%, #f8fafc 100%);
+            min-height: 100vh;
+            padding-bottom: 40px;
+        }
+        .dashboard-header {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 2rem;
+        }
+        .dashboard-title {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: #003366;
+        }
+        .agent-booking-heading {
+            font-size: 2.8rem;
+            font-weight: 800;
+            color: #2563eb;
+            letter-spacing: 1px;
+            margin-bottom: 0.5rem;
+            text-shadow: 0 2px 8px #c7d2fe;
+        }
+        .awb-search {
+            max-width: 320px;
+            border-radius: 8px;
+            border: 1.5px solid #2563eb;
+        }
+        .card {
+            margin-bottom: 20px;
+            border-radius: 14px;
+            box-shadow: 0 6px 24px rgba(37,99,235,0.08), 0 1.5px 4px rgba(0,0,0,0.04);
+            border: none;
+        }
+        .card-header {
+            background: linear-gradient(90deg, #2563eb 0%, #60a5fa 100%);
+            color: #fff;
+            border-radius: 14px 14px 0 0 !important;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+        .metric-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #2563eb;
+        }
+        .metric-label {
+            color: #64748b;
+            font-size: 15px;
+        }
+        .row.g-4 > [class^='col-'] {
+            padding-left: 12px;
+            padding-right: 12px;
+        }
+        .refresh-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        .tooltip-inner {
+            max-width: 300px;
+            text-align: left;
+        }
+        .plane-animation {
+            position: absolute;
+            top: 30px;
+            left: -180px;
+            width: 120px;
+            z-index: 1001;
+            filter: drop-shadow(0 2px 8px #222);
+            animation: flyplane 7s linear infinite;
+        }
+        @keyframes flyplane {
+            0% { left: -180px; top: 30px; }
+            60% { left: 60vw; top: 10px; }
+            100% { left: 110vw; top: 30px; }
+        }
+    </style>
+</head>
+<body class="bg-cargo">
+    <!-- Real Airplane Image with Pakistan Flag Banner Banner, only on welcome page -->
+    <div id="planeContainer" style="position:absolute;top:0;left:0;width:100vw;height:100vh;pointer-events:none;z-index:1002;">
+        <img id="realPlaneImg" src="realPlaneImg.png" alt="Airplane" style="position:absolute;height:360px;width:auto;filter:drop-shadow(0 8px 32px #222);transition: left 2s, top 2s;display:none;" />
+    </div>
+    <div class="welcome-overlay" id="welcomeSection">
+        <div class="container-fluid h-100">
+            <div class="row h-100 align-items-center">
+                <div class="col-md-7 d-flex flex-column justify-content-center">
+                    <div class="banner mb-4" style="margin-left: 40px;">Cargourier Express</div>
+                    <h4 class="text-light" style="margin-left: 40px;">Your trusted partner for air cargo, shipments, and consignments.</h4>
+                </div>
+                <div class="col-md-5 d-flex justify-content-center align-items-center">
+                    <div class="login-card">
+                        <h3 class="mb-3 text-center">Login</h3>
+                        <form id="loginForm">
+                            <div class="mb-3">
+                                <label for="username" class="form-label">Username</label>
+                                <input type="text" class="form-control" id="username" required placeholder="Enter username">
+                            </div>
+                            <div class="mb-3">
+                                <label for="password" class="form-label">Password</label>
+                                <input type="password" class="form-control" id="password" required placeholder="Enter password">
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">Login</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="footer">Designed by Hammad Rustam</div>
+    </div>
+
+    <div class="dashboard-section" id="dashboardSection">
+        <div class="container-fluid">
+            <div class="text-center mb-4 position-relative">
+                <button class="btn btn-outline-danger position-absolute top-0 end-0 m-3" onclick="logout()">
+                    <i class="bi bi-box-arrow-right"></i> Logout
+                </button>
+                <div class="agent-booking-heading" style="font-weight:600;font-size:2.2rem;margin-bottom:1.5rem;">Agent Booking Dashboard</div>
+                <div class="d-flex justify-content-center">
+                    <input type="text" class="form-control awb-search" id="awbSearch" placeholder="Search by AWB..." oninput="filterByAWB()" style="max-width:320px;">
+                </div>
+            </div>
+            <div class="row g-4">
+                <div class="col-md-3">
+                    <div class="card" data-bs-toggle="tooltip" data-bs-placement="top" title="Average time taken to launch the browser for automation.">
+                        <div class="card-body text-center">
+                            <div class="metric-value" id="avg-browser-launch">0.00s</div>
+                            <div class="metric-label">Average Browser Launch</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card" data-bs-toggle="tooltip" data-bs-placement="top" title="Average time taken to complete the login process.">
+                        <div class="card-body text-center">
+                            <div class="metric-value" id="avg-login">0.00s</div>
+                            <div class="metric-label">Average Login Time</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card" data-bs-toggle="tooltip" data-bs-placement="top" title="Average time taken to complete the booking process.">
+                        <div class="card-body text-center">
+                            <div class="metric-value" id="avg-booking">0.00s</div>
+                            <div class="metric-label">Average Booking Time</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card" data-bs-toggle="tooltip" data-bs-placement="top" title="Total average execution time for all steps.">
+                        <div class="card-body text-center">
+                            <div class="metric-value" id="avg-total">0.00s</div>
+                            <div class="metric-label">Average Total Time</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row mt-4">
+                <div class="col-md-6 d-flex align-items-stretch">
+                    <div class="card w-100" data-bs-toggle="tooltip" data-bs-placement="top" title="Line chart showing the trend of each step's timing over time.">
+                        <div class="card-header">Performance Trends</div>
+                        <div class="card-body p-3">
+                            <div class="chart-container" style="height:340px;min-height:340px;">
+                                <canvas id="performanceChart" style="height:320px !important;"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 d-flex align-items-stretch">
+                    <div class="card w-100" data-bs-toggle="tooltip" data-bs-placement="top" title="Distribution of successful and failed runs.">
+                        <div class="card-header">Error Distribution</div>
+                        <div class="card-body p-3">
+                            <div class="chart-container" style="height:340px;min-height:340px;">
+                                <canvas id="errorChart" style="height:320px !important;"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card" data-bs-toggle="tooltip" data-bs-placement="top" title="Detailed log of each run, including timings and status.">
+                        <div class="card-header">Performance Log</div>
+                        <div class="card-body">
+                            <div class="table-container">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Timestamp</th>
+                                            <th>AWB</th>
+                                            <th>Browser Launch</th>
+                                            <th>Login</th>
+                                            <th>Booking</th>
+                                            <th>Total</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="performanceTable">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <button class="btn btn-primary refresh-btn" onclick="loadData()" id="refreshButton">
+            <i class="bi bi-arrow-clockwise"></i> Refresh
+        </button>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js"></script>
+    <script>
+        // Tooltip initialization
+        function enableTooltips() {
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.forEach(function (tooltipTriggerEl) {
+                new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+        }
+
+        // Hide plane on dashboard, show only on welcome
+        let planeMoveTimeout;
+        function animatePlaneRightToLeft() {
+            const plane = document.getElementById('realPlaneImg');
+            const container = document.getElementById('planeContainer');
+            const planeWidth = plane.offsetWidth || 600;
+            const planeHeight = plane.offsetHeight || 240;
+            const maxLeft = window.innerWidth - planeWidth;
+            const minTop = 0;
+            const maxTop = window.innerHeight - planeHeight;
+            // Center above login/signup box
+            const loginBox = document.querySelector('.login-card');
+            let top = 60;
+            let leftStart = window.innerWidth - planeWidth;
+            let leftEnd = -planeWidth;
+            if (loginBox) {
+                const rect = loginBox.getBoundingClientRect();
+                top = rect.top - planeHeight - 30;
+                if (top < 0) top = 20;
+            }
+            plane.style.transition = 'none';
+            plane.style.left = leftStart + 'px';
+            plane.style.top = top + 'px';
+            plane.style.display = 'block';
+            setTimeout(() => {
+                plane.style.transition = 'left 5s linear, top 2s';
+                plane.style.left = leftEnd + 'px';
+            }, 100);
+            // After animation, hide plane
+            if (planeMoveTimeout) clearTimeout(planeMoveTimeout);
+            planeMoveTimeout = setTimeout(() => {
+                plane.style.display = 'none';
+            }, 5200);
+        }
+        function showPlaneOnWelcome() {
+            const planeContainer = document.getElementById('planeContainer');
+            planeContainer.style.display = 'block';
+            animatePlaneRightToLeft();
+        }
+        function hidePlaneOnDashboard() {
+            document.getElementById('planeContainer').style.display = 'none';
+            if (planeMoveTimeout) clearTimeout(planeMoveTimeout);
+        }
+        // On login, hide plane
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+
+            try {
+                const response = await fetch('/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    document.getElementById('welcomeSection').style.display = 'none';
+                    document.getElementById('dashboardSection').style.display = 'block';
+                    hidePlaneOnDashboard();
+                    loadData();
+                    enableTooltips();
+                } else {
+                    alert('Invalid credentials');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Login failed');
+            }
+        });
+
+        // Check if already logged in
+        async function checkAuth() {
+            try {
+                const response = await fetch('/check-auth');
+                const data = await response.json();
+                if (data.isAuthenticated) {
+                    document.getElementById('welcomeSection').style.display = 'none';
+                    document.getElementById('dashboardSection').style.display = 'block';
+                    hidePlaneOnDashboard();
+                    loadData();
+                    enableTooltips();
+                }
+            } catch (error) {
+                console.error('Auth check failed:', error);
+            }
+        }
+
+        // Run auth check when page loads
+        checkAuth();
+
+        let performanceChart;
+        let errorChart;
+        let allData = [];
+
+        function formatTime(seconds) {
+            return parseFloat(seconds).toFixed(2) + 's';
+        }
+
+        function updateMetrics(data) {
+            if (!data.length) {
+                document.getElementById('avg-browser-launch').textContent = '0.00s';
+                document.getElementById('avg-login').textContent = '0.00s';
+                document.getElementById('avg-booking').textContent = '0.00s';
+                document.getElementById('avg-total').textContent = '0.00s';
+                return;
+            }
+            const avgBrowserLaunch = data.reduce((sum, item) => sum + parseFloat(item.browserLaunch_s), 0) / data.length;
+            const avgLogin = data.reduce((sum, item) => sum + parseFloat(item.login_s), 0) / data.length;
+            const avgBooking = data.reduce((sum, item) => sum + parseFloat(item.booking_s), 0) / data.length;
+            const avgTotal = data.reduce((sum, item) => sum + parseFloat(item.total_s), 0) / data.length;
+
+            document.getElementById('avg-browser-launch').textContent = formatTime(avgBrowserLaunch);
+            document.getElementById('avg-login').textContent = formatTime(avgLogin);
+            document.getElementById('avg-booking').textContent = formatTime(avgBooking);
+            document.getElementById('avg-total').textContent = formatTime(avgTotal);
+        }
+
+        function updateCharts(data) {
+            const timestamps = data.map(item => new Date(item.timestamp).toLocaleTimeString());
+            const browserLaunchTimes = data.map(item => parseFloat(item.browserLaunch_s));
+            const loginTimes = data.map(item => parseFloat(item.login_s));
+            const bookingTimes = data.map(item => parseFloat(item.booking_s));
+            const totalTimes = data.map(item => parseFloat(item.total_s));
+
+            if (performanceChart) {
+                performanceChart.destroy();
+            }
+
+            performanceChart = new Chart(document.getElementById('performanceChart'), {
+                type: 'line',
+                data: {
+                    labels: timestamps,
+                    datasets: [
+                        {
+                            label: 'Browser Launch',
+                            data: browserLaunchTimes,
+                            borderColor: '#007bff',
+                            tension: 0.1
+                        },
+                        {
+                            label: 'Login',
+                            data: loginTimes,
+                            borderColor: '#28a745',
+                            tension: 0.1
+                        },
+                        {
+                            label: 'Booking',
+                            data: bookingTimes,
+                            borderColor: '#ffc107',
+                            tension: 0.1
+                        },
+                        {
+                            label: 'Total',
+                            data: totalTimes,
+                            borderColor: '#dc3545',
+                            tension: 0.1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Time (seconds)'
+                            }
+                        }
+                    }
+                }
+            });
+
+            const errorCount = data.filter(item => item.error).length;
+            const successCount = data.length - errorCount;
+
+            if (errorChart) {
+                errorChart.destroy();
+            }
+
+            errorChart = new Chart(document.getElementById('errorChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Success', 'Error'],
+                    datasets: [{
+                        data: [successCount, errorCount],
+                        backgroundColor: ['#28a745', '#dc3545']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+        }
+
+        function updateTable(data) {
+            const tbody = document.getElementById('performanceTable');
+            tbody.innerHTML = '';
+
+            data.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${new Date(item.timestamp).toLocaleString()}</td>
+                    <td>${item.awb}</td>
+                    <td>${formatTime(item.browserLaunch_s)}</td>
+                    <td>${formatTime(item.login_s)}</td>
+                    <td>${formatTime(item.booking_s)}</td>
+                    <td>${formatTime(item.total_s)}</td>
+                    <td>${item.error ? '<span class="badge bg-danger">Error</span>' : '<span class="badge bg-success">Success</span>'}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function filterByAWB() {
+            const search = document.getElementById('awbSearch').value.trim().toLowerCase();
+            let filtered = allData;
+            if (search) {
+                filtered = allData.filter(item => (item.awb || '').toLowerCase().includes(search));
+            }
+            updateMetrics(filtered);
+            updateCharts(filtered);
+            updateTable(filtered);
+        }
+
+        // Add loading state to refresh button
+        function setRefreshButtonLoading(isLoading) {
+            const button = document.getElementById('refreshButton');
+            if (isLoading) {
+                button.disabled = true;
+                button.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Refreshing...';
+            } else {
+                button.disabled = false;
+                button.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Refresh';
+            }
+        }
+
+        function loadData() {
+            setRefreshButtonLoading(true);
+            fetch('/performance-data')
+                .then(response => response.json())
+                .then(data => {
+                    allData = data;
+                    filterByAWB();
+                })
+                .catch(error => {
+                    console.error('Error loading data:', error);
+                    alert('Error loading performance data. Please try again.');
+                })
+                .finally(() => {
+                    setRefreshButtonLoading(false);
+                });
+        }
+
+        // Auto-refresh every 30 seconds (when dashboard is visible)
+        setInterval(function() {
+            if (document.getElementById('dashboardSection').style.display === 'block') {
+                loadData();
+            }
+        }, 30000);
+
+        // Initial data load when dashboard is shown
+        if (document.getElementById('dashboardSection').style.display === 'block') {
+            loadData();
+        }
+
+        // Add logout function
+        async function logout() {
+            try {
+                const response = await fetch('/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    window.location.href = '/';
+                }
+            } catch (error) {
+                console.error('Logout failed:', error);
+                alert('Logout failed. Please try again.');
+            }
+        }
+    </script>
+</body>
+</html> 
